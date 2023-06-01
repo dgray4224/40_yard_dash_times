@@ -1,0 +1,180 @@
+---
+title: "Draft prediction by NFL Combine metrics"
+author: "Daniel Garcia"
+date: "2022-11-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Importing data
+```{r}
+# importing libraries
+library(tidyverse)
+library(rcompanion)
+
+#importing dataset
+df=read_csv("C:/Users/dgray/OneDrive/Stats/stat 410 regression/project/NFL combine data.csv")
+glimpse(df)
+```
+
+```{r}
+# showing all position values
+unique(df$Position)
+```
+
+
+```{r}
+# subsetting to include only Rb, WR, CB, and SS position groups
+df1 = df %>% 
+  filter(Position=="WR" | Position=="CB" | Position=="SS" | Position=="RB")
+glimpse(df1)
+```
+```{r}
+# converting from metric units to american units
+df1 = df1 %>% 
+  mutate(Weight= 2.20462*(Weight),
+         Height= 39.3701*(Height), 
+         Vertical_Jump = 0.393701*(Vertical_Jump),
+         Broad_Jump= 0.393701*(Broad_Jump))
+df1
+```
+
+
+```{r}
+# droppin null values 
+df1=drop_na(df1)
+```
+
+### Showing the response variable is normally distributed
+
+```{r}
+# histogram of response variable
+plotNormalHistogram(df1$Sprint_40yd)
+```
+
+The above histogram resembles a bell-shaped curve, which signifies that it is normally distributed
+
+```{r}
+# testing normality of response via shapiro test of 40 yd dash times
+shapiro.test(df1$Sprint_40yd)
+```
+
+```{r}
+# testing normality of response via histogram of 40 yd dash times
+ggplot(df1, aes(x=Sprint_40yd)) +
+  geom_histogram(bins=18, color="black", fill="orange") 
+```
+
+
+shapiro test gives us a p-value of 0.3671, which is not in our rejection range. So we can conclude that the response variable is normally distributed. 
+
+
+```{r}
+# setting reference levels 
+Position_ = relevel(as.factor(df1$Position), ref="WR")
+```
+
+### Fitting General Regression model 
+```{r}
+# fitting general linear regreession 
+summary(fitted.model<-glm(Sprint_40yd ~ Position_ + Height + Weight + Vertical_Jump + Broad_Jump, data=df1, family=gaussian(link="identity")))
+```
+
+```{r}
+# find standard deviation of responce(40 yard sprint)
+sigma(fitted.model)
+```
+
+### Fitted model 
+E_hat(40ydSprint)= 4.531 + 0.0184(CB) + 0.0326(RB) + 0.0861(SS) + 0.1088(Height) + 0.00224(Weight) - 0.00179(Vertical jump) - 0.000977(Broad Jump)
+
+
+### Testing Model Fit
+
+```{r}
+# define null model
+null.model = glm(Sprint_40yd ~ 1, data=df1, family=gaussian(link=identity))
+
+#find deviance
+print(deviance<- -2*(logLik(null.model)-logLik(fitted.model)))
+```
+
+```{r}
+# find p value of deviance test
+p.value<- pchisq(deviance, df=7, lower.tail=FALSE)
+p.value
+```
+we conclude that the model is a good fit, given by the p-value of the deviance test
+
+No need to run AIC, AICC, and BIC since we are not comparing the model to other models
+
+## Predictions
+
+```{r}
+# 1) lets predict a real players 40 time
+# Tyreek Hill, Miami Dolphins
+# 40 yard dash time for a WR, weighing 185, 5'10" height, with a vertical jump of 40.5 inches, and broad jump of 129 inches
+# actual 40 time: 4.29 seconds
+tyreek_pred = predict(fitted.model,data.frame(Position_="WR", Weight=185, Height=70, Vertical_Jump=40.5, Broad_Jump=129))
+tyreek_pred
+```
+
+```{r}
+# 2) lets predict 40 yard dash time for a RB, weighing 200, 5'11" height, with a vertical jump of 36 inches, and broad jump of 125 inches
+pred_1 = predict(fitted.model,data.frame(Position_="WR", 
+                                         Weight=180, Height=60,
+                                         Vertical_Jump=48, Broad_Jump=147))
+pred_1
+```
+
+```{r}
+# 3)
+# Breece Hall. N.Y. Jets
+# RB, 217 lbs, 5'11", vertical 40", broad 126"
+# actual 40 time: 4.39
+Hall_pred = predict(fitted.model,data.frame(Position_="RB", Weight=217, Height=71, Vertical_Jump=40, Broad_Jump=126))
+Hall_pred
+```
+```{r}
+# 4)
+# Justin Jefferson. Minnesota Vikings
+# WR, 202 lbs, 6'1", vertical 37.5", broad 126"
+# actual time: 4.43
+Jefferson_pred = predict(fitted.model,data.frame(Position_="WR", Weight=217, Height=71, Vertical_Jump=40, Broad_Jump=126))
+Jefferson_pred
+```
+```{r}
+# 5)
+# Patrick Surtain II, Denver Broncos
+# CB, 202 lbs, 6'2", vertical 39", broad 131"
+# actual time: 4.42 seconds
+surtain_pred = predict(fitted.model,data.frame(Position_="CB", Weight=202, Height=72, Vertical_Jump=39, Broad_Jump=131))
+surtain_pred
+```
+
+```{r}
+# 6)
+# Brian Dawkins, Philadelphia Eagles, retired
+# SS, height 71.4", weight 189 lbs, vertical 35", broad 120"
+# 40 time: 4.63
+Dawkins_pred = predict(fitted.model,data.frame(Position_="SS", Weight=189, Height=71.4, Vertical_Jump=35, Broad_Jump=120))
+Dawkins_pred
+```
+
+
+
+
+
+## Extra
+
+```{r}
+ggplot(data=df1, mapping=aes(x=Weight,y=Sprint_40yd, color=Position)) +
+  geom_point() +
+  geom_smooth(method=lm, formula=y~x, se=FALSE) + 
+  labs(title="Scatterplot of 40- yard sprint vs weight by position")
+```
+
+
