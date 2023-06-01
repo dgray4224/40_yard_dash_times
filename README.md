@@ -1,4 +1,7 @@
-# 40_yard_dash_times
+# 40-yard-dash times
+
+### To view html output, please visit: https://dgray4224.github.io/40_yard_dash_times/  
+
 predicting 40-yard dash times at the NFL scouting combine using a general linear regression model. 
 
 The NFL combine is a yearly week-long gathering every February for all the top athletes in college football. 
@@ -11,4 +14,4 @@ Although some scouts suggest that performing well at the NFL combine does not le
 it is clear that the attributes desired in a player can be well evaluated at the NFL combine.
 
 
-The attached zip file includes: code in R, Knitted file in R, code in SAS, project report, and the powerpoint presentation. 
+
